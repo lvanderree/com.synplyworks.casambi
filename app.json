@@ -1,0 +1,24 @@
+{
+  "id": "com.synplyworks.casambi",
+  "version": "0.1.0",
+  "compatibility": ">=2.0.0",
+  "sdk": 2,
+  "name": {
+    "en": "Casambi Controller"
+  },
+  "description": {
+    "en": "Integrates Casambi network via its gateway into Homey."
+  },
+  "category": [
+    "lights"
+  ],
+  "permissions": [],
+  "images": {
+    "large": "/assets/images/large.png",
+    "small": "/assets/images/small.png"
+  },
+  "author": {
+    "name": "Leon van der Ree",
+    "email": "leon@synplyworks.com"
+  }
+}
