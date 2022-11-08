@@ -35,7 +35,7 @@ class LuminaireDriver extends Homey.Driver {
       return client.getNetworks().then((networks: Auth) => Object.values(Object.fromEntries(
         Object.entries(networks).map(([key, driver]) => [key, {
           ...driver,
-          iconObj: { url: '/app/com.synplyworks.casambi/assets/icon.svg' },
+          iconObj: { url: '/app/com.synplyworks.casambi/assets/network.svg' },
         }]),
       )));
     });
