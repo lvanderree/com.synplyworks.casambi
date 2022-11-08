@@ -111,7 +111,6 @@ export default class Client {
       await this.login();
     }
 
-    // return stubbedDevices;
     const NETWORK_STATE_URL = `${BASE_URL}/networks/${networkId}/state`;
     const h = {
       ...this.headers,
