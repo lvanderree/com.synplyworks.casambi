@@ -1,0 +1,101 @@
+<div class=hy-tmpl-select_devices id=$HY_TMPL_ID>
+    Selecteer je netwerk
+    <style type=text/css>.hy-tmpl-select_devices-device {
+        -webkit-tap-highlight-color: transparent;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        height: 2em;
+        margin-bottom: .5em;
+        background: #eee;
+        padding: .5em 1em;
+        border-radius: 5px
+    }
+
+    .hy-tmpl-select_devices-device-name {
+        order: 1;
+        flex-grow: 1;
+        line-height: 2em;
+        padding-right: 1em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis
+    }
+
+    .hy-tmpl-select_devices-device-input {
+        order: 2;
+        flex-shrink: 0
+    }
+
+    .hy-tmpl-select_devices-device-icon {
+        flex-shrink: 0;
+        width: 2em;
+        height: 2em;
+        margin-right: .5em;
+        margin-left: -.5em;
+        background-color: #000
+    }</style>
+    <script type=text/javascript>!function() {
+      var s,
+        l = document.getElementById('$HY_TMPL_ID')
+          .querySelector('.hy-tmpl-select_devices-devices'),
+        a = Homey.getCurrentView(),
+        r = {},
+        m = !1,
+        y = [];
+
+      function i(e) {
+        [].concat(e)
+          .filter(t)
+          .forEach(function(e) {
+            var t = y.push(e) - 1,
+              n = t,
+              t = Math.random()
+                .toString(),
+              i = document.createElement('label'),
+              d = (i.htmlFor = t, i.classList.add('hy-tmpl-select_devices-device'), i.classList.add('hy-nostyle'), l.appendChild(i), document.createElement('div'));
+            d.classList.add('hy-tmpl-select_devices-device-name'), d.textContent = e.name, i.appendChild(d);
+            (d = document.createElement('div')).classList.add('hy-tmpl-select_devices-device-icon'), d.classList.add('icon'), i.appendChild(d), e.iconObj && (d.style.webkitMaskImage = 'url(' + e.iconObj.url + ')', delete e.iconObj);
+            var c = document.createElement('input');
+
+            function o(e) {
+              if (m && e) for (var t in r) r[t] = !1;
+              var i;
+              r[n] = e, e = y.filter(function(e, t) {
+                return r[t];
+              }), JSON.stringify(e) !== JSON.stringify(s) && (s = e, Homey.emit(a + '_selection', e), (i = Homey.getNextViewByTemplate('list_devices')) && Homey.setViewStoreValue(i, 'network', e, function(e) {
+                if (e) return console.error(e);
+              }), window.selected_networks = e.map(function(e) {
+                return JSON.stringify(e.data);
+              }));
+            }
+
+            c.id = t, c.type = m ? 'radio' : 'checkbox', c.name = 'device', c.classList.add('hy-input-checkbox'), c.classList.add('hy-tmpl-select_devices-device-input'), c.addEventListener('change', function() {
+              o(!!c.checked);
+            }), i.appendChild(c), m && 1 !== y.length ? o(!1) : (c.checked = 'checked', o(!0)), window.found_networks[JSON.stringify(e.data)] = e;
+          });
+      }
+
+      function t(t) {
+        return !y.find(function(e) {
+          return JSON.stringify(e.data) === JSON.stringify(t.data);
+        });
+      }
+
+      window.found_networks = {}, window.selected_networks = [], Homey.setTitle(Homey.__('pair.list_networks.title')), Homey.showLoadingOverlay(Homey.__('pair.list_networks.loading')), Homey.getOptions(function(e, t) {
+        if (e) return Homey.error(e);
+        t.singular && (m = !0), t.title && Homey.setTitle(Homey.__(t.title));
+      }), Homey.on('list_networks', function(e) {
+        Homey.hideLoadingOverlay(), i(e);
+      }), Homey.emit('list_networks', null, function(e, t) {
+        if (Homey.hideLoadingOverlay(), e) {
+          l.textContent = e.message || e.toString();
+        } else {
+          if (t.length) return i(t);
+          Homey.setTitle(Homey.__('pair.list_networks.nonew')), l.textContent = Homey.__('pair.list_networks.nonew');
+        }
+        return Homey.setNavigationClose();
+      });
+    }();</script>
+    <div class=hy-tmpl-select_devices-devices></div>
+</div>

@@ -1,0 +1,9 @@
+{
+  "pair": {
+    "list_networks": {
+      "title": "Selecteer het Casambi netwoek",
+      "nonew": "Geen netwerken gevonden",
+      "loading": "Ophalen"
+    }
+  }
+}

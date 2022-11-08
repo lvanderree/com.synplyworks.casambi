@@ -1,0 +1,14 @@
+.idea/
+.vscode/
+.history/
+.archive/lib/test.ts
+lib/stubbedDevices.ts
+.archive/lib/test.js
+.archive/lib/stubbedDevices.js
+/node_modules
+/env.json
+/.archive/
+
+# Added by Homey CLI
+/.homeybuild/
+

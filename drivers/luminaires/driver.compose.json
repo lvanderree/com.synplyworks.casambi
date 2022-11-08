@@ -1,0 +1,67 @@
+{
+  "name": {
+    "en": "luminaires"
+  },
+  "class": "light",
+  "capabilities": [
+    "light_saturation",
+    "light_temperature",
+    "dim",
+    "light_hue",
+    "light_mode",
+    "onoff"
+  ],
+  "platforms": ["local", "cloud"],
+  "connectivity": ["cloud"],
+  "images": {
+    "small": "{{driverAssetsPath}}/images/small.png",
+    "large": "{{driverAssetsPath}}/images/large.png",
+    "xlarge": "{{driverAssetsPath}}/images/xlarge.png"
+  },
+  "settings": [
+    {
+      "id": "username",
+      "type": "text",
+      "label": { "en": "E-mail address" },
+      "value": "john@doe.com",
+      "hint": { "en": "The e-mail address of the user." }
+    },
+    {
+      "id": "password",
+      "type": "password",
+      "label": { "en": "Password" },
+      "value": "Secret",
+      "hint": { "en": "The password of the user." }
+    }
+  ],
+  "pair": [
+    {
+      "id": "login_credentials",
+      "template": "login_credentials",
+      "options": {
+        "title": {
+          "en": "Login at Casambi"
+        },
+        "usernameLabel": { "en": "E-mail address" },
+        "usernamePlaceholder": { "en": "john@doe.com" },
+        "passwordLabel": { "en": "Password" },
+        "passwordPlaceholder": { "en": "Password" }
+
+      }
+    },
+    {
+      "id": "select_network",
+      "options": { "singular": true },
+      "navigation": { "next": "list_devices" }
+    },
+    {
+      "id": "list_devices",
+      "template": "list_devices",
+      "navigation": { "prev":  "select_network", "next": "add_devices" }
+    },
+    {
+      "id": "add_devices",
+      "template": "add_devices"
+    }
+  ]
+}

@@ -1,24 +1,146 @@
 {
+  "_comment": "This file is generated. Please edit .homeycompose/app.json instead.",
   "id": "com.synplyworks.casambi",
   "version": "0.1.0",
-  "compatibility": ">=2.0.0",
-  "sdk": 2,
+  "compatibility": ">=5.0.0",
+  "sdk": 3,
+  "brandColor": "#FFA500",
   "name": {
     "en": "Casambi Controller"
   },
   "description": {
-    "en": "Integrates Casambi network via its gateway into Homey."
+    "en": "Casambi Lightning"
   },
   "category": [
     "lights"
   ],
+  "tags": {
+    "en": [
+      "casambi",
+      "lights"
+    ],
+    "nl": [
+      "casambi",
+      "verlichting"
+    ]
+  },
   "permissions": [],
   "images": {
+    "small": "/assets/images/small.png",
     "large": "/assets/images/large.png",
-    "small": "/assets/images/small.png"
+    "xlarge": "/assets/images/xlarge.png"
   },
   "author": {
     "name": "Leon van der Ree",
     "email": "leon@synplyworks.com"
-  }
+  },
+  "contributing": {
+    "donate": {
+      "paypal": {
+        "username": "lvanderree"
+      }
+    }
+  },
+  "bugs": {
+    "url": "https://github.com/lvanderree/com.synplyworks.casambi/issues"
+  },
+  "homeyCommunityTopicId": 42512,
+  "source": "https://github.com/lvanderree/com.synplyworks.casambi",
+  "drivers": [
+    {
+      "name": {
+        "en": "luminaires"
+      },
+      "class": "light",
+      "capabilities": [
+        "light_saturation",
+        "light_temperature",
+        "dim",
+        "light_hue",
+        "light_mode",
+        "onoff"
+      ],
+      "platforms": [
+        "local",
+        "cloud"
+      ],
+      "connectivity": [
+        "cloud"
+      ],
+      "images": {
+        "small": "/drivers/luminaires/assets/images/small.png",
+        "large": "/drivers/luminaires/assets/images/large.png",
+        "xlarge": "/drivers/luminaires/assets/images/xlarge.png"
+      },
+      "settings": [
+        {
+          "id": "username",
+          "type": "text",
+          "label": {
+            "en": "E-mail address"
+          },
+          "value": "john@doe.com",
+          "hint": {
+            "en": "The e-mail address of the user."
+          }
+        },
+        {
+          "id": "password",
+          "type": "password",
+          "label": {
+            "en": "Password"
+          },
+          "value": "Secret",
+          "hint": {
+            "en": "The password of the user."
+          }
+        }
+      ],
+      "pair": [
+        {
+          "id": "login_credentials",
+          "template": "login_credentials",
+          "options": {
+            "title": {
+              "en": "Login at Casambi"
+            },
+            "usernameLabel": {
+              "en": "E-mail address"
+            },
+            "usernamePlaceholder": {
+              "en": "john@doe.com"
+            },
+            "passwordLabel": {
+              "en": "Password"
+            },
+            "passwordPlaceholder": {
+              "en": "Password"
+            }
+          }
+        },
+        {
+          "id": "select_network",
+          "options": {
+            "singular": true
+          },
+          "navigation": {
+            "next": "list_devices"
+          }
+        },
+        {
+          "id": "list_devices",
+          "template": "list_devices",
+          "navigation": {
+            "prev": "select_network",
+            "next": "add_devices"
+          }
+        },
+        {
+          "id": "add_devices",
+          "template": "add_devices"
+        }
+      ],
+      "id": "luminaires"
+    }
+  ]
 }

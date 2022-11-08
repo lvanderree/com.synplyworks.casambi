@@ -1,1 +1,9 @@
-{}
+{
+  "pair": {
+    "list_networks": {
+      "title": "Select the Casambi network",
+      "nonew": "No networks found",
+      "loading": "Loading"
+    }
+  }
+}
