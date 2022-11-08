@@ -1,5 +1,8 @@
 {
   "0.1.0": {
     "en": "initial implementation"
+  },
+  "0.2.0": {
+    "en": "integrated login and adding devices"
   }
 }
