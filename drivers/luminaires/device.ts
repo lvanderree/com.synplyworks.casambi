@@ -56,9 +56,9 @@ export default class LuminaireDevice extends Homey.Device {
 
   // this method is called when the Device has requested a state change (turned on or off)
   async onCapabilityOnoff(value: boolean, opts: {}) {
-    this.log(`LuminaireDevice ${this.getName()}: onoff is changed to `, value);
+    this.log(`LuminaireDevice ${this.getName()}: onoff is changed to `, value), this.getData();
 
-    this.app!.updateDeviceState(this, { OnOff: { value: +value } });
+    this.app!.updateDeviceState(this, { Dimmer: { value: +value } });
 
     // ... set value to real device, e.g.
     // await setMyDeviceState({ on: value });

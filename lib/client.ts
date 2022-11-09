@@ -167,10 +167,10 @@ export default class Client {
     };
 
     webSocket.onmessage = (event: WebSocket.MessageEvent): void => {
-      console.log(event);
+      console.log("webSocket.onmessage(event): ", event);
 
       const data = JSON.parse(event.data.toString());
-      console.log(data);
+      console.log("webSocket.onmessage(event).data: ", data);
 
       if ('method' in data) {
         if (data.method === 'unitChanged') {
@@ -209,14 +209,15 @@ export default class Client {
 
   updateDeviceState(
     webSocket: WebSocket,
-    unitId: number,
+    deviceId: number,
     targetControls: {}, // { Dimmer: { value: 0.5 } },
   ): void {
+    console.log('updateDeviceState', deviceId, targetControls, webSocket.readyState === webSocket.OPEN);
     if (webSocket.readyState === webSocket.OPEN) {
       const data = JSON.stringify({
         wire: this.wire,
         method: 'controlUnit',
-        id: unitId,
+        id: deviceId,
         targetControls,
       });
 
