@@ -1,15 +1,22 @@
 import Homey from 'homey';
-import Client, {Auth} from '../../lib/client';
+import Client, { Auth } from '../../lib/client';
+import CasambiApp from '../../app';
 
-class LuminaireDevice extends Homey.Device {
+export default class LuminaireDevice extends Homey.Device {
+  protected app?: CasambiApp;
+
   /**
    * onInit is called when the device is initialized.
    */
   async onInit() {
-    this.log('LuminaireDevice has been initialized');
+    this.app = this.homey.app as unknown as CasambiApp;
+
+    this.app.connectDevice(this);
 
     // register a capability listener
     this.registerCapabilityListener('onoff', this.onCapabilityOnoff.bind(this));
+
+    this.log('LuminaireDevice has been initialized');
   }
 
   /**
@@ -49,7 +56,9 @@ class LuminaireDevice extends Homey.Device {
 
   // this method is called when the Device has requested a state change (turned on or off)
   async onCapabilityOnoff(value: boolean, opts: {}) {
-    this.log(`LuminaireDevice ${ this.getName() }: onoff is changed to `, value);
+    this.log(`LuminaireDevice ${this.getName()}: onoff is changed to `, value);
+
+    this.app!.updateDeviceState(this, { OnOff: { value: +value } });
 
     // ... set value to real device, e.g.
     // await setMyDeviceState({ on: value });

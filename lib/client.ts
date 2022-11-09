@@ -136,7 +136,7 @@ export default class Client {
     return networkState;
   }
 
-  connectSocket(networkId: string, network: Network): WebSocket {
+  connectSocket(network: Network): WebSocket {
     const webSocket = new WebSocket('wss://door.casambi.com/v1/bridge/', this.token);
 
     webSocket.on('open', (event: WebSocket.Event): void => {
@@ -145,7 +145,7 @@ export default class Client {
 
       const OPEN = JSON.stringify({
         method: 'open',
-        id: networkId,
+        id: network.id,
         session: network.sessionId,
         ref: reference,
         wire: this.wire,
@@ -207,10 +207,10 @@ export default class Client {
     return webSocket;
   }
 
-  protected updateDeviceState(
+  updateDeviceState(
     webSocket: WebSocket,
     unitId: number,
-    targetControls = { Dimmer: { value: 0.5 } },
+    targetControls: {}, // { Dimmer: { value: 0.5 } },
   ): void {
     if (webSocket.readyState === webSocket.OPEN) {
       const data = JSON.stringify({

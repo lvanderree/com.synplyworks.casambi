@@ -30,8 +30,6 @@ class LuminaireDriver extends Homey.Driver {
     });
 
     session.setHandler('list_networks', async () => {
-      // const client: Client = new Client(Homey.env.API_KEY, username, password);
-
       return client.getNetworks().then((networks: Auth) => Object.values(Object.fromEntries(
         Object.entries(networks).map(([key, driver]) => [key, {
           ...driver,
@@ -50,7 +48,6 @@ class LuminaireDriver extends Homey.Driver {
 
     session.setHandler('list_devices', async () => {
       return client.getNetworks().then((networks: Auth) => {
-        const networkIds = Object.keys(networks);
 
         return client.getNetworkState(networkId).then((state: NetworkState) =>
           // this.log(state.units);
