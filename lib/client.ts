@@ -167,7 +167,7 @@ export default class Client {
     };
 
     webSocket.onmessage = (event: WebSocket.MessageEvent): void => {
-      console.log("webSocket.onmessage(event): ", event);
+      // console.log("webSocket.onmessage(event): ", event);
 
       const data = JSON.parse(event.data.toString());
       console.log("webSocket.onmessage(event).data: ", data);
@@ -177,6 +177,7 @@ export default class Client {
           // Initial device state info and device state changed event
           // In case data.id is not in "network.units" list (fetched via API)
           // this event can be ignored
+          // TODO: for listeners in array on this socket, notify with data
 
         } else if (data.method === 'networkUpdated') {
           // Network changed event, for example device added to a group within the network

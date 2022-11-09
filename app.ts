@@ -48,6 +48,7 @@ export default class CasambiApp extends Homey.App {
 
   connectDevice(device: LuminaireDevice) {
     this.getSocketForDevice(device);
+    // TODO: when , update device
   }
 
   async updateDeviceState(device: LuminaireDevice, state: {}) {
