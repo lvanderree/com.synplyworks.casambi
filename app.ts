@@ -1,14 +1,18 @@
 import * as crypto from 'crypto';
 import WebSocket from 'ws';
-import Client, { Network } from './lib/client';
+import Client from './lib/client';
 import LuminaireDevice from './drivers/luminaires/device';
 
 const Homey = require('homey');
 
 export default class CasambiApp extends Homey.App {
-  private clients: { [key: string]: Client } = {};
+  protected clients: { [key: string]: Client } = {};
 
-  private sockets: { [key: string]: WebSocket } = {};
+  protected sockets: { [key: string]: WebSocket } = {};
+
+  protected connectedDevices: { [key: string]: LuminaireDevice } = {};
+
+  protected latestDeviceStates: { [key: string]: any } = {};
 
   onInit() {
     this.log('Casambi is running...');
@@ -31,6 +35,26 @@ export default class CasambiApp extends Homey.App {
     return this.clients[key];
   }
 
+  connectDevice(device: LuminaireDevice) {
+    this.getSocketForDevice(device);
+
+    const deviceId = device.getData().id;
+
+    this.connectedDevices[deviceId] = device;
+
+    // update device with latest known state info
+    if (deviceId in this.latestDeviceStates) {
+      device.updateState(this.latestDeviceStates[deviceId]);
+    }
+  }
+
+  async updateDeviceState(device: LuminaireDevice, state: {}) {
+    const client = this.getClientForUser(device.getSettings().username, device.getSettings().password);
+    const socket = await this.getSocketForDevice(device);
+
+    client.updateDeviceState(socket, device.getData().id, state);
+  }
+
   protected async getSocketForDevice(device: LuminaireDevice): Promise<WebSocket> {
     const networkId = device.getData().network_id;
 
@@ -39,23 +63,23 @@ export default class CasambiApp extends Homey.App {
       const network = (await client.getNetworks())[networkId];
 
       if (network) {
-        this.sockets[networkId] = client.connectSocket(network);
+        this.sockets[networkId] = client.connectSocket(network, this.unitChangedHandler.bind(this));
       }
     }
 
     return this.sockets[networkId];
   }
 
-  connectDevice(device: LuminaireDevice) {
-    this.getSocketForDevice(device);
-    // TODO: when , update device
-  }
+  protected unitChangedHandler(unitState: any) {
+    this.latestDeviceStates[unitState.id] = unitState;
 
-  async updateDeviceState(device: LuminaireDevice, state: {}) {
-    const client = this.getClientForUser(device.getSettings().username, device.getSettings().password);
-    const socket = await this.getSocketForDevice(device);
+    if (unitState.id in this.connectedDevices) {
+      console.log('App.unitChangedHandler recevied update for device', unitState);
 
-    client.updateDeviceState(socket, device.getData().id, state);
+      this.connectedDevices[unitState.id].updateState(unitState);
+    } else {
+      console.log('App.unitChangedHandler recevied update for (still) unknown device', unitState);
+    }
   }
 }
 

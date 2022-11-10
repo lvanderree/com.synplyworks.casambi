@@ -67,7 +67,7 @@ class LuminaireDriver extends Homey.Driver {
                   username,
                   password,
                 },
-                capabilities: ['onoff'],
+                capabilities: ['onoff', 'dim'], // TODO: depend on driver properties
                 capabilitiesOptions: {},
               }]),
           )));

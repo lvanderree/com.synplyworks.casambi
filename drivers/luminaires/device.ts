@@ -15,6 +15,7 @@ export default class LuminaireDevice extends Homey.Device {
 
     // register a capability listener
     this.registerCapabilityListener('onoff', this.onCapabilityOnoff.bind(this));
+    this.registerCapabilityListener('dim', this.onCapabilityDim.bind(this));
 
     this.log('LuminaireDevice has been initialized');
   }
@@ -59,11 +60,22 @@ export default class LuminaireDevice extends Homey.Device {
     this.log(`LuminaireDevice ${this.getName()}: onoff is changed to `, value), this.getData();
 
     this.app!.updateDeviceState(this, { Dimmer: { value: +value } });
+  }
 
-    // ... set value to real device, e.g.
-    // await setMyDeviceState({ on: value });
-    // or, throw an error
-    // throw new Error('Switching the device failed!');
+  async onCapabilityDim(value: number, opts: {}) {
+    this.log(`LuminaireDevice ${this.getName()}: dim is changed to `, value), this.getData();
+
+    this.app!.updateDeviceState(this, { Dimmer: { value } });
+  }
+
+  updateState(state: any) {
+    console.log('LuminaireDevice.updateState with state: ', state);
+
+    if ('dimLevel' in state) {
+      this.setCapabilityValue('dim', state.dimLevel);
+    } else {
+      console.log('LuminaireDevice.updateState! Could not update, no dimlevel in state!');
+    }
   }
 }
 

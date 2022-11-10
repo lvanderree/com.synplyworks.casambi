@@ -1,4 +1,4 @@
-import fetch, { HeaderInit } from 'node-fetch';
+import fetch, {HeaderInit} from 'node-fetch';
 import WebSocket from 'ws';
 
 export const BASE_URL = 'https://door.casambi.com/v1';
@@ -62,6 +62,10 @@ export interface NetworkState {
 
 interface Dictionary {
   [key: string]: string | boolean | number;
+}
+
+interface UnitChangedHandler {
+  (state: any): void
 }
 
 export default class Client {
@@ -136,7 +140,7 @@ export default class Client {
     return networkState;
   }
 
-  connectSocket(network: Network): WebSocket {
+  connectSocket(network: Network, unitChangedCallback: UnitChangedHandler): WebSocket {
     const webSocket = new WebSocket('wss://door.casambi.com/v1/bridge/', this.token);
 
     webSocket.on('open', (event: WebSocket.Event): void => {
@@ -170,14 +174,15 @@ export default class Client {
       // console.log("webSocket.onmessage(event): ", event);
 
       const data = JSON.parse(event.data.toString());
-      console.log("webSocket.onmessage(event).data: ", data);
+      // console.log("webSocket.onmessage(event).data: ", data);
 
       if ('method' in data) {
         if (data.method === 'unitChanged') {
           // Initial device state info and device state changed event
           // In case data.id is not in "network.units" list (fetched via API)
           // this event can be ignored
-          // TODO: for listeners in array on this socket, notify with data
+          console.log("Client: webSocket.onmessage(event) method=unitChanged data: ", data);
+          unitChangedCallback(data);
 
         } else if (data.method === 'networkUpdated') {
           // Network changed event, for example device added to a group within the network
@@ -213,7 +218,7 @@ export default class Client {
     deviceId: number,
     targetControls: {}, // { Dimmer: { value: 0.5 } },
   ): void {
-    console.log('updateDeviceState', deviceId, targetControls, webSocket.readyState === webSocket.OPEN);
+    console.log('Client.updateDeviceState', deviceId, targetControls, webSocket.readyState === webSocket.OPEN);
     if (webSocket.readyState === webSocket.OPEN) {
       const data = JSON.stringify({
         wire: this.wire,
@@ -227,7 +232,7 @@ export default class Client {
   }
 
   protected isAuthenticated = (): boolean => !!this.auth
-  /* && (Date.now() < this.auth.expires_at) */
+    /* && (Date.now() < this.auth.expires_at) */
   ;
 
   protected getUnixTimestampSeconds = (): number => Math.round(Date.now() / 1000);
