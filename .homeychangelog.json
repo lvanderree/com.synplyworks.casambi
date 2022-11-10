@@ -10,5 +10,8 @@
   },
   "0.2.2": {
     "en": "Don't disable devices, but use dim to turn them on/off"
+  },
+  "0.3.0": {
+    "en": "Added state-change handling and implemented dim capability"
   }
 }
