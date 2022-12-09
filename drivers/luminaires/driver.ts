@@ -2,12 +2,26 @@ import Homey from 'homey';
 import PairSession from 'homey/lib/PairSession';
 import Client, { Auth, NetworkState } from '../../lib/client';
 
-class LuminaireDriver extends Homey.Driver {
+export default class LuminaireDriver extends Homey.Driver {
+  protected supportedTypes: {
+    [type: string]: {
+      capabilities: string[];
+      class: string
+    }
+  } = {};
+
   /**
    * onInit is called when the driver is initialized.
    */
   async onInit() {
-    this.log('Casambi-luminaire driver has been initialized');
+    this.log('Casambi-LuminaireDriver has been initialized');
+
+    this.supportedTypes = {
+      Luminaire: {
+        class: 'light',
+        capabilities: ['onoff', 'dim'],
+      },
+    };
   }
 
   async onPair(session: PairSession) {
@@ -29,14 +43,12 @@ class LuminaireDriver extends Homey.Driver {
       return client.testCredentials();
     });
 
-    session.setHandler('list_networks', async () => {
-      return client.getNetworks().then((networks: Auth) => Object.values(Object.fromEntries(
-        Object.entries(networks).map(([key, driver]) => [key, {
-          ...driver,
-          iconObj: { url: '/app/com.synplyworks.casambi/assets/network.svg' },
-        }]),
-      )));
-    });
+    session.setHandler('list_networks', async () => client.getNetworks().then((networks: Auth) => Object.values(Object.fromEntries(
+      Object.entries(networks).map(([key, driver]) => [key, {
+        ...driver,
+        iconObj: { url: '/app/com.synplyworks.casambi/assets/network.svg' },
+      }]),
+    ))));
 
     session.setHandler('select_network_selection', async (data: Auth) => {
       networkId = data[0].id;
@@ -46,33 +58,33 @@ class LuminaireDriver extends Homey.Driver {
         .then((networks: Auth) => Object.keys(networks).includes(networkId));
     });
 
-    session.setHandler('list_devices', async () => {
-      return client.getNetworks().then((networks: Auth) => {
+    session.setHandler('list_devices', async () => client.getNetworks().then((networks: Auth) => client.getNetworkState(networkId).then((state: NetworkState) => {
+      // this.log(JSON.stringify(state.units, null, 4));
 
-        return client.getNetworkState(networkId).then((state: NetworkState) =>
-          // this.log(state.units);
-          Object.values(Object.fromEntries(
-            Object.entries(state.units)
-              .filter(([key, driver]) => driver.type === 'Luminaire')
-              .map(([key, driver]) => [key, {
-                name: driver.name,
-                data: {
-                  network_id: networkId,
-                  id: driver.id,
-                  address: driver.address,
-                },
-                settings: {
-                  // Store username & password in settings
-                  // so the user can change them later
-                  username,
-                  password,
-                },
-                capabilities: ['onoff', 'dim'], // TODO: depend on driver properties
-                capabilitiesOptions: {},
-              }]),
-          )));
-      });
-    });
+      type CasambiType = keyof typeof this.supportedTypes;
+
+      return Object.values(Object.fromEntries(
+        Object.entries(state.units)
+          .filter(([key, driver]) => driver.type in this.supportedTypes)
+          .map(([key, driver]) => [key, {
+            name: driver.name,
+            data: {
+              network_id: networkId,
+              id: driver.id,
+              address: driver.address,
+            },
+            settings: {
+              // Store username & password in settings
+              // so the user can change them later
+              username,
+              password,
+            },
+            capabilities: this.supportedTypes[driver.type as CasambiType].capabilities,
+            capabilitiesOptions: {},
+            class: this.supportedTypes[driver.type as CasambiType].class,
+          }]),
+      ));
+    })));
   }
 }
 

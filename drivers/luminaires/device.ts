@@ -1,5 +1,4 @@
 import Homey from 'homey';
-import Client, { Auth } from '../../lib/client';
 import CasambiApp from '../../app';
 
 export default class LuminaireDevice extends Homey.Device {
@@ -13,9 +12,15 @@ export default class LuminaireDevice extends Homey.Device {
 
     this.app.connectDevice(this);
 
-    // register a capability listener
-    this.registerCapabilityListener('onoff', this.onCapabilityOnoff.bind(this));
-    this.registerCapabilityListener('dim', this.onCapabilityDim.bind(this));
+    this.registerMultipleCapabilityListener(['onoff', 'dim'], async ({ onoff, dim }) => {
+      if (onoff === false) {
+        await this.app!.updateDeviceState(this, { Dimmer: { value: 0 } });
+      } else if (onoff === true) {
+        await this.app!.updateDeviceState(this, { Dimmer: { value: 1 } });
+      } else {
+        await this.app!.updateDeviceState(this, { Dimmer: { value: dim } });
+      }
+    });
 
     this.log('LuminaireDevice has been initialized');
   }
@@ -55,26 +60,18 @@ export default class LuminaireDevice extends Homey.Device {
     this.log('LuminaireDevice has been deleted');
   }
 
-  // this method is called when the Device has requested a state change (turned on or off)
-  async onCapabilityOnoff(value: boolean, opts: {}) {
-    this.log(`LuminaireDevice ${this.getName()}: onoff is changed to `, value), this.getData();
-
-    this.app!.updateDeviceState(this, { Dimmer: { value: +value } });
-  }
-
-  async onCapabilityDim(value: number, opts: {}) {
-    this.log(`LuminaireDevice ${this.getName()}: dim is changed to `, value), this.getData();
-
-    this.app!.updateDeviceState(this, { Dimmer: { value } });
-  }
-
   updateState(state: any) {
     console.log('LuminaireDevice.updateState with state: ', state);
 
     if ('dimLevel' in state) {
-      this.setCapabilityValue('dim', state.dimLevel);
+      if (state.dimLevel == 0) {
+        this.setCapabilityValue('onoff', false);
+      } else {
+        this.setCapabilityValue('onoff', true);
+        this.setCapabilityValue('dim', state.dimLevel);
+      }
     } else {
-      console.log('LuminaireDevice.updateState! Could not update, no dimlevel in state!');
+      console.log('LuminaireDevice.updateState! Could not update, no dimlevel in state!', state);
     }
   }
 }

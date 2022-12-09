@@ -1,6 +1,6 @@
 {
   "name": {
-    "en": "luminaires"
+    "en": "Luminaires"
   },
   "class": "light",
   "capabilities": [
@@ -18,6 +18,7 @@
     "large": "{{driverAssetsPath}}/images/large.png",
     "xlarge": "{{driverAssetsPath}}/images/xlarge.png"
   },
+  "icon": "{{driverAssetsPath}}/icon.svg",
   "settings": [
     {
       "id": "username",

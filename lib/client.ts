@@ -181,7 +181,7 @@ export default class Client {
           // Initial device state info and device state changed event
           // In case data.id is not in "network.units" list (fetched via API)
           // this event can be ignored
-          console.log("Client: webSocket.onmessage(event) method=unitChanged data: ", data);
+          // console.log("Client: webSocket.onmessage(event) method=unitChanged data: ", data);
           unitChangedCallback(data);
 
         } else if (data.method === 'networkUpdated') {

@@ -19,7 +19,7 @@ export default class CasambiApp extends Homey.App {
   }
 
   getClientForUser(username: string, password: string): Client {
-    this.log(`Casambi getClientFor: ${username}`);
+    // this.log(`Casambi getClientFor: ${username}`);
 
     const key = crypto.createHash('md5').update(username + password).digest('hex');
 
@@ -31,7 +31,7 @@ export default class CasambiApp extends Homey.App {
       this.clients[key] = client;
     }
 
-    this.log(`returning client ${username}`);
+    // this.log(`returning client ${username}`);
     return this.clients[key];
   }
 
@@ -74,11 +74,11 @@ export default class CasambiApp extends Homey.App {
     this.latestDeviceStates[unitState.id] = unitState;
 
     if (unitState.id in this.connectedDevices) {
-      console.log('App.unitChangedHandler recevied update for device', unitState);
+      this.log('App.unitChangedHandler recevied update for device', unitState);
 
       this.connectedDevices[unitState.id].updateState(unitState);
     } else {
-      console.log('App.unitChangedHandler recevied update for (still) unknown device', unitState);
+      this.log('App.unitChangedHandler recevied update for (still) unknown device', unitState);
     }
   }
 }
