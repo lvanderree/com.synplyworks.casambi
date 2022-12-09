@@ -13,5 +13,8 @@
   },
   "0.3.0": {
     "en": "Added state-change handling and implemented dim capability"
+  },
+  "0.3.1": {
+    "en": "fixing on/off/dim"
   }
 }
