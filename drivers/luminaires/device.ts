@@ -10,7 +10,7 @@ export default class LuminaireDevice extends Homey.Device {
   async onInit() {
     this.app = this.homey.app as unknown as CasambiApp;
 
-    this.app.connectDevice(this);
+    await this.app.connectDevice(this);
 
     this.registerMultipleCapabilityListener(['onoff', 'dim'], async ({ onoff, dim }) => {
       if (onoff === false) {
@@ -63,8 +63,8 @@ export default class LuminaireDevice extends Homey.Device {
   updateState(state: any) {
     console.log('LuminaireDevice.updateState with state: ', state);
 
-    if ('dimLevel' in state) {
-      if (state.dimLevel == 0) {
+    if ('dimLevel' in state && state.dimLevel != undefined) {
+      if (!(state.dimLevel)) {
         this.setCapabilityValue('onoff', false);
       } else {
         this.setCapabilityValue('onoff', true);

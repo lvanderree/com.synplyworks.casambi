@@ -1,6 +1,6 @@
 import Homey from 'homey';
 import PairSession from 'homey/lib/PairSession';
-import Client, { Auth, NetworkState } from '../../lib/client';
+import Client, { NetworkList, NetworkState } from '../../lib/client';
 
 export default class LuminaireDriver extends Homey.Driver {
   protected supportedTypes: {
@@ -43,22 +43,22 @@ export default class LuminaireDriver extends Homey.Driver {
       return client.testCredentials();
     });
 
-    session.setHandler('list_networks', async () => client.getNetworks().then((networks: Auth) => Object.values(Object.fromEntries(
+    session.setHandler('list_networks', async () => client.getNetworks().then((networks: NetworkList) => Object.values(Object.fromEntries(
       Object.entries(networks).map(([key, driver]) => [key, {
         ...driver,
         iconObj: { url: '/app/com.synplyworks.casambi/assets/network.svg' },
       }]),
     ))));
 
-    session.setHandler('select_network_selection', async (data: Auth) => {
+    session.setHandler('select_network_selection', async (data: NetworkList) => {
       networkId = data[0].id;
       this.log('select_network_selection ', networkId, data);
 
       return client.getNetworks()
-        .then((networks: Auth) => Object.keys(networks).includes(networkId));
+        .then((networks: NetworkList) => Object.keys(networks).includes(networkId));
     });
 
-    session.setHandler('list_devices', async () => client.getNetworks().then((networks: Auth) => client.getNetworkState(networkId).then((state: NetworkState) => {
+    session.setHandler('list_devices', async () => client.getNetworks().then((networks: NetworkList) => client.getNetworkState(networkId).then((state: NetworkState) => {
       // this.log(JSON.stringify(state.units, null, 4));
 
       type CasambiType = keyof typeof this.supportedTypes;

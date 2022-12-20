@@ -1,5 +1,6 @@
 import fetch, {HeaderInit} from 'node-fetch';
 import WebSocket from 'ws';
+import LuminaireDevice from "../drivers/luminaires/device";
 
 export const BASE_URL = 'https://door.casambi.com/v1';
 
@@ -12,8 +13,13 @@ export interface Network {
   sessionId: string;
 }
 
-export interface Auth {
+export interface NetworkList {
+  // expires_at: number;
   [id: string]: Network;
+}
+
+interface SocketStates {
+  [id: string]: WebSocket;
 }
 
 export interface Device {
@@ -68,6 +74,15 @@ interface UnitChangedHandler {
   (state: any): void
 }
 
+interface UnitChangedHandlerId {
+  deviceId: number;
+  unitChangedCallback: UnitChangedHandler;
+}
+
+interface UnitChangedHandlerNetworkList {
+  [key: string]: Array<UnitChangedHandlerId>;
+}
+
 export default class Client {
   protected token: string;
 
@@ -75,13 +90,21 @@ export default class Client {
 
   protected password: string;
 
-  protected auth?: Auth;
+  protected networks?: NetworkList;
 
   protected wire = 1;
+
+  protected sockets: SocketStates = {};
 
   protected headers: Dictionary = {
     'Content-Type': 'application/json',
   };
+
+  protected isLoggingIn = false;
+
+  protected unitChangedNetworkCallbacks: UnitChangedHandlerNetworkList = {};
+  protected connectedDevices: { [key: string]: LuminaireDevice } = {};
+
 
   constructor(token: string, username: string, password: string) {
     this.token = token;
@@ -93,32 +116,36 @@ export default class Client {
 
   async testCredentials(): Promise<boolean> {
     try {
-      return !!await this.login();
+      return !!await this.getNetworks();
     } catch {
       return false;
     }
   }
 
-  async getNetworks(): Promise<Auth> {
+  async getNetworks(): Promise<NetworkList> {
     if (!this.isAuthenticated()) {
       await this.login();
     }
 
-    if (!this.auth) {
+    if (!this.networks) {
       throw new Error('Still not authenticated');
     }
-    return this.auth;
+
+    return this.networks;
+  }
+
+  async getNetwork(networkId: string): Promise<Network> {
+    return this.getNetworks().then((networks: NetworkList) => {
+      // console.log('Searching network in networkList', networkId, networks);
+      return networks[networkId];
+    });
   }
 
   async getNetworkState(networkId: string): Promise<NetworkState> {
-    if (!this.isAuthenticated()) {
-      await this.login();
-    }
-
     const NETWORK_STATE_URL = `${BASE_URL}/networks/${networkId}/state`;
     const h = {
       ...this.headers,
-      'X-Casambi-Session': (await this.getNetworks())[networkId].sessionId,
+      'X-Casambi-Session': (await this.getNetwork(networkId)).sessionId,
     };
 
     // console.log('getting devices from:', NETWORK_STATE_URL, 'with headers:', h);
@@ -140,86 +167,31 @@ export default class Client {
     return networkState;
   }
 
-  connectSocket(network: Network, unitChangedCallback: UnitChangedHandler): WebSocket {
-    const webSocket = new WebSocket('wss://door.casambi.com/v1/bridge/', this.token);
+  async addUnitChangedHandler(networkId: string, deviceId: number, unitChangedCallback: UnitChangedHandler) {
+    console.log(`Connecting socket for device to network ${networkId}`);
 
-    webSocket.on('open', (event: WebSocket.Event): void => {
-      const reference = 'REFERENCE-ID'; // Reference handle created by client to link messages to relevant callbacks
-      const type = 1; // Client type, use value 1 (FRONTEND)
+    const network = await this.getNetwork(networkId);
+    const sessionKey = `${network.id}-${network.sessionId}`;
+    if (!(sessionKey in this.unitChangedNetworkCallbacks)) {
+      this.unitChangedNetworkCallbacks[sessionKey] = [];
+    }
 
-      const OPEN = JSON.stringify({
-        method: 'open',
-        id: network.id,
-        session: network.sessionId,
-        ref: reference,
-        wire: this.wire,
-        type,
-      });
-      webSocket.send(decodeURIComponent(escape(OPEN)));
-    });
+    this.unitChangedNetworkCallbacks[sessionKey].push({ deviceId, unitChangedCallback });
+    this.getSocket(network); // connect if not already
 
-    webSocket.on('error', (event: WebSocket.ErrorEvent): void => {
-      console.log('WebSocket Error:', event);
-
-      // TODO: REOPEN the WebSocket connection and all related wires.
-    });
-
-    webSocket.onclose = (event: WebSocket.CloseEvent): void => {
-      console.log('WebSocket Closed!');
-
-      // TODO: REOPEN the WebSocket connection and all related wires.
-    };
-
-    webSocket.onmessage = (event: WebSocket.MessageEvent): void => {
-      // console.log("webSocket.onmessage(event): ", event);
-
-      const data = JSON.parse(event.data.toString());
-      // console.log("webSocket.onmessage(event).data: ", data);
-
-      if ('method' in data) {
-        if (data.method === 'unitChanged') {
-          // Initial device state info and device state changed event
-          // In case data.id is not in "network.units" list (fetched via API)
-          // this event can be ignored
-          // console.log("Client: webSocket.onmessage(event) method=unitChanged data: ", data);
-          unitChangedCallback(data);
-
-        } else if (data.method === 'networkUpdated') {
-          // Network changed event, for example device added to a group within the network
-          // Network setting or composition has somehow changed.
-          // Fetching latest network information from REST API and
-          // re-sending the OPEN message to WebSocket is recommended. *
-
-        } else if (data.method === 'peerChanged') {
-          // Devices online changed event, for example new device has joined the network
-          // In most cases no action required.
-
-        }
-      }
-    };
-
-    // ping every 4 minutes to keep socket alive
-    setInterval(() => {
-      if (webSocket.readyState === webSocket.OPEN) {
-        const PING = JSON.stringify({
-          method: 'ping',
-          wire: this.wire,
-        });
-
-        webSocket.send(decodeURIComponent(escape(PING)));
-      }
-    }, 4 * 60 * 1000);
-
-    return webSocket;
+    // unitChangedCallback(); // TODO: update data for current deviceId if present
   }
 
-  updateDeviceState(
-    webSocket: WebSocket,
+  async updateDeviceState(
+    networkId: string,
     deviceId: number,
     targetControls: {}, // { Dimmer: { value: 0.5 } },
-  ): void {
-    console.log('Client.updateDeviceState', deviceId, targetControls, webSocket.readyState === webSocket.OPEN);
-    if (webSocket.readyState === webSocket.OPEN) {
+  ) {
+    const network = await this.getNetwork(networkId);
+    const socket = this.getSocket(network);
+    console.log('Client.updateDeviceState', deviceId, targetControls, socket.readyState === WebSocket.OPEN);
+
+    if (socket.readyState === WebSocket.OPEN) {
       const data = JSON.stringify({
         wire: this.wire,
         method: 'controlUnit',
@@ -227,17 +199,116 @@ export default class Client {
         targetControls,
       });
 
-      webSocket.send(decodeURIComponent(escape(data)));
+      socket.send(decodeURIComponent(escape(data)));
     }
   }
 
-  protected isAuthenticated = (): boolean => !!this.auth
-    /* && (Date.now() < this.auth.expires_at) */
-  ;
+  protected getSocket(network: Network): WebSocket {
+    const sessionKey = `${network.id}-${network.sessionId}`;
 
-  protected getUnixTimestampSeconds = (): number => Math.round(Date.now() / 1000);
+    if (!this.sockets[sessionKey]) {
+      console.log(`Opening socket for networkId ${network.id} and sessionId ${network.sessionId}`);
+      this.sockets[sessionKey] = new WebSocket('wss://door.casambi.com/v1/bridge/', this.token);
+      const socket = this.sockets[sessionKey];
 
-  protected async login(): Promise<Auth> {
+      // ping every 4 minutes to keep socket alive
+      const timer = setInterval(() => {
+        if (socket.readyState === WebSocket.OPEN) {
+          // console.log('ping to keep alive: ', timer);
+          const PING = JSON.stringify({
+            method: 'ping',
+            wire: this.wire,
+          });
+
+          socket.send(decodeURIComponent(escape(PING)));
+        }
+      }, 4 * 60 * 1000);
+
+      socket.on('open', (event: WebSocket.Event): void => {
+        const reference = 'REFERENCE-ID'; // Reference handle created by client to link messages to relevant callbacks
+        const type = 1; // Client type, use value 1 (FRONTEND)
+
+        const OPEN = JSON.stringify({
+          method: 'open',
+          id: network.id,
+          session: network.sessionId,
+          ref: reference,
+          wire: this.wire,
+          type,
+        });
+        socket.send(decodeURIComponent(escape(OPEN)));
+      });
+
+      socket.onmessage = (event: WebSocket.MessageEvent): void => {
+        // console.log("webSocket.onmessage(event): ", event);
+
+        const data = JSON.parse(event.data.toString());
+        // console.log("webSocket.onmessage(event).data: ", data);
+
+        if ('method' in data) {
+          if (data.method === 'unitChanged') {
+            // Initial device state info and device state changed event
+            // In case data.id is not in "network.units" list (fetched via API)
+            // this event can be ignored
+            console.log("Client: webSocket.onmessage(event) method=unitChanged data: ", data);
+            if (sessionKey in this.unitChangedNetworkCallbacks) {
+              this.unitChangedNetworkCallbacks[sessionKey].forEach(({ deviceId, unitChangedCallback }) => {
+                if (deviceId === data.id) {
+                  unitChangedCallback(data);
+                }
+              }); // TODO: for devices else info log and store lateststate for later usage
+            }
+          } else if (data.method === 'networkUpdated') {
+            // Network changed event, for example device added to a group within the network
+            // Network setting or composition has somehow changed.
+            // Fetching latest network information from REST API and
+            // re-sending the OPEN message to WebSocket is recommended. *
+
+          } else if (data.method === 'peerChanged') {
+            // Devices online changed event, for example new device has joined the network
+            // In most cases no action required.
+
+          }
+        }
+      };
+
+      socket.on('error', (event: WebSocket.ErrorEvent): void => {
+        console.log('WebSocket Error (Reconnecting...):', event);
+
+        this.reconnect(network, timer);
+      });
+
+      socket.onclose = (event: WebSocket.CloseEvent): void => {
+        console.log('WebSocket Closed! Reconnecting...');
+
+        this.reconnect(network, timer);
+      };
+
+      // } else {
+      //   console.log(`Reusing socket for networkId ${network.id} with sessionId ${network.sessionId}`);
+    }
+
+    return this.sockets[sessionKey];
+  }
+
+  protected reconnect(network: Network, timer: NodeJS.Timer) {
+    clearInterval(timer);
+    delete this.sockets[`${network.id}-${network.sessionId}`];
+    this.getSocket(network); // reconnect socket
+  }
+
+  protected isAuthenticated = (): boolean => {
+    return !!this.networks; // TODO: && Date.now() < this.networks.expires_at;
+  };
+
+  protected async login(): Promise<NetworkList> {
+    if (this.isLoggingIn) {
+      // wait when already logging and retry returning result eventually
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      return this.getNetworks();
+    }
+
+    this.isLoggingIn = true;
     delete this.headers['X-Casambi-Session'];
 
     const AUTHENTICATE_URL = `${BASE_URL}/networks/session`;
@@ -252,15 +323,16 @@ export default class Client {
     });
 
     if (!response.ok) {
-      console.log('authentication failed:', await response.text());
+      console.log(`authentication failed for ${this.username}: `, await response.text());
       throw new Error(`authentication failed: ${await response.text()}`);
     }
 
-    this.auth = await response.json() as Auth;
-    // console.log('authentication succeeded');
-    // console.log(auth);
-    // auth['expires_at'] = (auth.expires_in - 20) * 3600 + this.getUnixTimestampSeconds();
+    this.networks = await response.json() as NetworkList;
+    this.isLoggingIn = false;
 
-    return this.auth;
+    console.log(`authentication succeeded for ${this.username}`);
+    // console.log(response.json, this.auth);
+
+    return this.networks;
   }
 }
